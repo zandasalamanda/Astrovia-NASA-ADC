@@ -1,111 +1,193 @@
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 from ursina.shaders import lit_with_shadows_shader
+import numpy as np
+import random
 
 app = Ursina()
 
-random.seed(0)
-Entity.default_shader = lit_with_shadows_shader
+# Window Title info
+window.title = 'Ursina Solar System Simulation'
+window.fps_counter.enabled = True
+max_frames = 30
 
-ground = Entity(model='plane', collider='box', scale=64, texture='grass', texture_scale=(4,4))
-
-editor_camera = EditorCamera(enabled=False, ignore_paused=True)
-player = FirstPersonController(model='cube', z=-10, color=color.orange, origin_y=-.5, speed=8, collider='box')
-player.collider = BoxCollider(player, Vec3(0,1,0), Vec3(1,2,1))
-
-gun = Entity(model='cube', parent=camera, position=(.5,-.25,.25), scale=(.3,.2,1), origin_z=-.5, color=color.red, on_cooldown=False)
-gun.muzzle_flash = Entity(parent=gun, z=1, world_scale=.5, model='quad', color=color.yellow, enabled=False)
-
-shootables_parent = Entity()
-mouse.traverse_target = shootables_parent
+window.fps_counter.max = 30
 
 
-for i in range(16):
-    Entity(model='cube', origin_y=-.5, scale=2, texture='brick', texture_scale=(1,2),
-        x=random.uniform(-8,8),
-        z=random.uniform(-8,8) + 8,
-        collider='box',
-        scale_y = random.uniform(2,3),
-        color=color.hsv(0, 0, random.uniform(.9, 1))
-        )
+music = Audio(sound_file_name='assets/leonell-cassio-music.mp3', loop=True, autoplay=True, volume=10)
+
+earth_t = venus_t = mars_t = mercury_t = jupiter_t = saturn_t = uranus_t = neptune_t = -np. pi
+
+able_text = True
+
+paused = False
+
 
 def update():
-    if held_keys['left mouse']:
-        shoot()
+    if not paused:
+        global earth_t, venus_t, mars_t, mercury_t, jupiter_t, saturn_t, uranus_t, neptune_t
+        mercury_t += .47 * time.dt
+        venus_t += .35 * time.dt
+        earth_t += .29 * time.dt
+        mars_t += .24 * time.dt
+        jupiter_t += .13 * time.dt
+        saturn_t += .0969 * time.dt
+        uranus_t += .0681 * time.dt
+        neptune_t += .0543 * time.dt
+        angle = np.pi * 40 / 180
 
-def shoot():
-    if not gun.on_cooldown:
-        # print('shoot')
-        gun.on_cooldown = True
-        gun.muzzle_flash.enabled=True
-        from ursina.prefabs.ursfx import ursfx
-        ursfx([(0.0, 0.0), (0.1, 0.9), (0.15, 0.75), (0.3, 0.14), (0.6, 0.0)], volume=0.5, wave='noise', pitch=random.uniform(-13,-12), pitch_change=-12, speed=3.0)
-        invoke(gun.muzzle_flash.disable, delay=.05)
-        invoke(setattr, gun, 'on_cooldown', False, delay=.15)
-        if mouse.hovered_entity and hasattr(mouse.hovered_entity, 'hp'):
-            mouse.hovered_entity.hp -= 10
-            mouse.hovered_entity.blink(color.red)
+        radius_1 = 96.75 + 500
+        mercury.x = np.cos(mercury_t) * radius_1
+        mercury.z = np.sin(mercury_t) * radius_1
 
+        radius_2 = 180.75 + 600
+        venus.x = np.cos(venus_t + angle) * radius_2
+        venus.z = np.sin(venus_t + angle) * radius_2
 
-from ursina.prefabs.health_bar import HealthBar
+        radius_3 = 250 + 750
+        earth.x = np.cos(earth_t + angle * 2) * radius_3
+        earth.z = np.sin(earth_t + angle * 2) * radius_3
 
-class Enemy(Entity):
-    def __init__(self, **kwargs):
-        super().__init__(parent=shootables_parent, model='cube', scale_y=2, origin_y=-.5, color=color.light_gray, collider='box', **kwargs)
-        self.health_bar = Entity(parent=self, y=1.2, model='cube', color=color.red, world_scale=(1.5,.1,.1))
-        self.max_hp = 100
-        self.hp = self.max_hp
+        radius_4 = 381 + 800
+        mars.x = np.cos(mars_t + angle * 3) * radius_4
+        mars.z = np.sin(mars_t + angle * 3) * radius_4
 
-    def update(self):
-        dist = distance_xz(player.position, self.position)
-        if dist > 40:
-            return
+        radius_5 = 1300 + 800
+        jupiter.x = np.cos(jupiter_t + angle * 4) * radius_5
+        jupiter.z = np.sin(jupiter_t + angle * 4) * radius_5
 
-        self.health_bar.alpha = max(0, self.health_bar.alpha - time.dt)
+        radius_6 = 2375+800
+        saturn.x = np.cos(saturn_t + angle * 5) * radius_6
+        saturn.z = np.sin(saturn_t + angle * 5) * radius_6
 
+        radius_7 = 4800+800
+        uranus.x = np.cos(uranus_t + angle * 6) * radius_7
+        uranus.z = np.sin(uranus_t + angle * 6) * radius_7
 
-        self.look_at_2d(player.position, 'y')
-        hit_info = raycast(self.world_position + Vec3(0,1,0), self.forward, 30, ignore=(self,))
-        # print(hit_info.entity)
-        if hit_info.entity == player:
-            if dist > 2:
-                self.position += self.forward * time.dt * 5
-
-    @property
-    def hp(self):
-        return self._hp
-
-    @hp.setter
-    def hp(self, value):
-        self._hp = value
-        if value <= 0:
-            destroy(self)
-            return
-
-        self.health_bar.world_scale_x = self.hp / self.max_hp * 1.5
-        self.health_bar.alpha = 1
-
-# Enemy()
-enemies = [Enemy(x=x*4) for x in range(4)]
+        radius_8 = 7525+800
+        neptune.x = np.cos(neptune_t + angle * 7) * radius_8
+        neptune.z = np.sin(neptune_t + angle * 7) * radius_8
 
 
-def pause_input(key):
-    if key == 'tab':    # press tab to toggle edit/play mode
-        editor_camera.enabled = not editor_camera.enabled
-
-        player.visible_self = editor_camera.enabled
-        player.cursor.enabled = not editor_camera.enabled
-        gun.enabled = not editor_camera.enabled
-        mouse.locked = not editor_camera.enabled
-        editor_camera.position = player.position
-
-        application.paused = editor_camera.enabled
-
-pause_handler = Entity(ignore_paused=True, input=pause_input)
+t = -np. pi
 
 
-sun = DirectionalLight()
-sun.look_at(Vec3(1,-1,-1))
-Sky()
+def input(key):
+    global paused
+    if held_keys['space']:
+        player.y += 800 * time.dt
+    if held_keys['control']:
+        player.y -= 800 * time.dt
+    if key == 'p':
+        paused = True
+    if key == 'u':
+        paused = False
+    if key == '1':
+        player.position = (mercury.x - 20, mercury.y, mercury.z - 20)
+    if key == '2':
+        player.position = (venus.x - 20, venus.y, venus.z - 30)
+    if key == '3':
+        player.position = (earth.x - 40, earth.y, earth.z - 20)
+    if key == '4':
+        player.position = (mars.x - 50, mars.y, mars.z - 50)
+    if key == '5':
+        player.position = (jupiter.x - 200, jupiter.y, jupiter.z - 200)
+    if key == '6':
+        player.position = (saturn.x - 200, saturn.y, saturn.z - 200)
+    if key == '7':
+        player.position = (uranus.x - 200, uranus.y, uranus.z - 200)
+    if key == '8':
+        player.position = (neptune.x - 200, neptune.y, neptune.z - 200)
+
+
+class Planet(Entity):
+
+    def __init__(self, x, y, z, scale, texture, name):
+        super().__init__()
+        self.model = 'sphere'
+        self.collider = 'sphere'
+        self.x = x
+        self.y = y
+        self.z = z
+        self.scale = scale
+        self.shader = lit_with_shadows_shader
+        self.texture = texture
+        self.name = name
+
+        self.sun = False
+
+    # Displays Name of the planet on the screen
+    def input(self, key):
+        def text_abler():
+            global able_text
+            able_text = True
+        global paused, able_text
+        if self.hovered and able_text:
+            name_text = Text(text=self.name)
+            able_text = False
+            name_text.appear(speed=0.15)
+            destroy(name_text, delay=3)
+            invoke(text_abler, delay=3)
+
+# Creates Sun
+
+
+sun = Planet(0, 0, 0, 800, 'assets/8k_sun', "Sun")
+sun.sun = True
+# Makes sun exempt from the shader
+sun.unlit = True
+
+# light from sun
+light1 = PointLight(shadows=True, color=color.red)
+
+# Other Planets
+earth = Planet(-250+800, 0, 0, 8*10, 'assets/earth', "Earth")
+
+mars = Planet(-381+800, 0, 0, 12*10, 'assets/mars', "Mars")
+
+mercury = Planet(96.75+500, 0, 0, 4*10, 'assets/mercury', "Mercury")
+
+venus = Planet(180.75+500, 0, 0, 6*10, 'assets/venus1', "Venus")
+
+jupiter = Planet(1300+800, 0, 0, 89.6*5, 'assets/jupiter', "Jupiter")
+
+saturn = Planet(2375+800, 0, 0, 75.68*5, 'assets/saturn', "Saturn")
+
+# Saturn's Ring
+ring = Entity(model=load_model('torus.blend'),
+              shader=lit_with_shadows_shader,
+              collider='mesh',
+              position=(saturn.x, saturn.y, saturn.z),
+              scale=300,
+              scale_y=1)
+ring.color = color.white
+ring.rotation_x = 45
+ring.reparent_to(saturn)
+
+uranus = Planet(4800+800, 0, 0, 32.48*5, 'uranus', "Uranus")
+
+neptune = Planet(7525+800, 0, 0, 31.04*5, 'neptune', "Neptune")
+
+
+# Asteroids Belt
+asteroid = Entity(model='asteroid', position=(1400, 0, 0), texture='asteroid', shader=lit_with_shadows_shader, scale=3.5)
+asteroid.scale = 0.5
+asteroid.color = color.light_gray
+asteroid_t = uranus_t
+asteroid_radius = 1400
+asteroid_num_var = 360
+
+for i in range(asteroid_num_var):
+    clone = duplicate(asteroid, texture='asteroid', color=color.light_gray, shader=lit_with_shadows_shader)
+    asteroid_t += 120
+    clone.rotation = (random.randint(0, 360), random.randint(0, 360), random.randint(0, 360))
+    clone.z = (random.randint(-50, 50))
+    clone.x = np.cos(asteroid_t) * asteroid_radius
+    clone.z = np.sin(asteroid_t) * asteroid_radius
+asteroid.visible = False
+
+Sky(texture="assets/space")
+
+player = FirstPersonController(position=(0, 3500, 0), gravity=0, speed=400)
 
 app.run()
